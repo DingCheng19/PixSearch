@@ -55,6 +55,17 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
         collectionView.backgroundColor = .systemBackground
         return collectionView
     }()
+    
+    private let emptyStateLabel: UILabel = {
+        let label = UILabel()
+        label.text = "No photos found."
+        label.textColor = .secondaryLabel
+        label.font = .systemFont(ofSize: 16)
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.isHidden = true
+        return label
+    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -66,6 +77,7 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
         setupLayout()
         setupCollectionView()
         setupSearchBar()
+        updateEmptyState()
     }
 }
 
@@ -77,21 +89,28 @@ private extension PhotoSearchViewController {
 
         view.addSubview(searchBar)
         view.addSubview(collectionView)
+        view.addSubview(emptyStateLabel)
     }
 
     func setupLayout() {
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         collectionView.translatesAutoresizingMaskIntoConstraints = false
-
+        emptyStateLabel.translatesAutoresizingMaskIntoConstraints = false
+        
         NSLayoutConstraint.activate([
             searchBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
             searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
             searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
-
+            
             collectionView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 8),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            emptyStateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyStateLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            emptyStateLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
+            emptyStateLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -24)
         ])
     }
     
@@ -122,6 +141,7 @@ extension PhotoSearchViewController {
         }
         
         collectionView.reloadData()
+        updateEmptyState()
         searchBar.resignFirstResponder()
         
         print("検索実行: \(keyword)")
@@ -133,7 +153,14 @@ extension PhotoSearchViewController {
         if keyword.isEmpty {
             displayedPhotos = allPhotos
             collectionView.reloadData()
+            updateEmptyState()
         }
+    }
+    
+    func updateEmptyState() {
+        let isEmpty = displayedPhotos.isEmpty
+        emptyStateLabel.isHidden = !isEmpty
+        collectionView.isHidden = isEmpty
     }
 }
 
