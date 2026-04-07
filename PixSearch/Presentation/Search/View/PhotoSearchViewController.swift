@@ -110,7 +110,7 @@ extension PhotoSearchViewController {
         }
 
         let photo = samplePhotos[indexPath.item]
-        cell.configure(name: photo.photographerName, image: nil)
+        cell.configure(with: photo)
 
         return cell
     }

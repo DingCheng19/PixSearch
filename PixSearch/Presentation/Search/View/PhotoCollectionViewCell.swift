@@ -11,8 +11,6 @@ final class PhotoCollectionViewCell: UICollectionViewCell {
 
     static let identifier = "PhotoCollectionViewCell"
 
-    // MARK: - UI Components
-
     private let imageView: UIImageView = {
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFill
@@ -29,7 +27,7 @@ final class PhotoCollectionViewCell: UICollectionViewCell {
         return label
     }()
 
-    // MARK: - Init
+    private var currentTask: URLSessionDataTask?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -41,7 +39,13 @@ final class PhotoCollectionViewCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // MARK: - Setup
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        currentTask?.cancel()
+        currentTask = nil
+        imageView.image = nil
+        nameLabel.text = nil
+    }
 
     private func setupUI() {
         contentView.addSubview(imageView)
@@ -53,15 +57,11 @@ final class PhotoCollectionViewCell: UICollectionViewCell {
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
-            // 写真
             imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
             imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-
-            // 正方形（アスペクト比1:1）
             imageView.heightAnchor.constraint(equalTo: imageView.widthAnchor),
 
-            // 名前
             nameLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 4),
             nameLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             nameLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
@@ -69,10 +69,33 @@ final class PhotoCollectionViewCell: UICollectionViewCell {
         ])
     }
 
-    // MARK: - Configure
+    func configure(with photo: Photo) {
+        nameLabel.text = photo.photographerName
+        loadImage(from: photo.thumbnailURL)
+    }
 
-    func configure(name: String, image: UIImage?) {
-        nameLabel.text = name
-        imageView.image = image
+    private func loadImage(from url: URL?) {
+        guard let url else {
+            imageView.image = nil
+            return
+        }
+
+        currentTask?.cancel()
+
+        currentTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            guard
+                let self,
+                let data,
+                let image = UIImage(data: data)
+            else {
+                return
+            }
+
+            DispatchQueue.main.async {
+                self.imageView.image = image
+            }
+        }
+
+        currentTask?.resume()
     }
 }
