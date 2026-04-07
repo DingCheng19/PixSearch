@@ -9,9 +9,9 @@ import UIKit
 import RxSwift
 import RxCocoa
 
-final class PhotoSearchViewController: UIViewController , UICollectionViewDataSource, UICollectionViewDelegateFlowLayout{
+final class PhotoSearchViewController: UIViewController , UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UISearchBarDelegate{
     
-    private let samplePhotos: [Photo] = [
+    private let allPhotos: [Photo] = [
         Photo(
             id: 1,
             photographerName: "Alice",
@@ -38,6 +38,8 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
         )
     ]
 
+    private var displayedPhotos: [Photo] = []
+
     private let searchBar: UISearchBar = {
         let searchBar = UISearchBar()
         searchBar.placeholder = "Search photos"
@@ -57,9 +59,13 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
     override func viewDidLoad() {
         super.viewDidLoad()
         print("PhotoSearchViewController loaded")
+        
+        displayedPhotos = allPhotos
+        
         setupUI()
         setupLayout()
         setupCollectionView()
+        setupSearchBar()
     }
 }
 
@@ -97,12 +103,44 @@ private extension PhotoSearchViewController {
             forCellWithReuseIdentifier: PhotoCollectionViewCell.identifier
         )
     }
+    
+    func setupSearchBar() {
+        searchBar.delegate = self
+    }
+}
+
+extension PhotoSearchViewController {
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let keyword = searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        
+        if keyword.isEmpty {
+            displayedPhotos = allPhotos
+        } else {
+            displayedPhotos = allPhotos.filter {
+                $0.photographerName.localizedCaseInsensitiveContains(keyword)
+            }
+        }
+        
+        collectionView.reloadData()
+        searchBar.resignFirstResponder()
+        
+        print("検索実行: \(keyword)")
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        let keyword = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if keyword.isEmpty {
+            displayedPhotos = allPhotos
+            collectionView.reloadData()
+        }
+    }
 }
 
 extension PhotoSearchViewController {
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return samplePhotos.count
+        return displayedPhotos.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -113,7 +151,7 @@ extension PhotoSearchViewController {
             return UICollectionViewCell()
         }
         
-        let photo = samplePhotos[indexPath.item]
+        let photo = displayedPhotos[indexPath.item]
         cell.configure(with: photo)
         
         return cell
@@ -129,7 +167,7 @@ extension PhotoSearchViewController {
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let photo = samplePhotos[indexPath.item]
+        let photo = displayedPhotos[indexPath.item]
         let detailViewController = PhotoDetailViewController(photo: photo)
         navigationController?.pushViewController(detailViewController, animated: true)
     }
