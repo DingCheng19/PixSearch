@@ -6,10 +6,13 @@
 //
 
 import UIKit
+import RxSwift
+import RxCocoa
 
-final class PhotoSearchViewController: UIViewController , UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UISearchBarDelegate{
+final class PhotoSearchViewController: UIViewController {
     
-    private let viewModel = PhotoSearchViewModel()
+    private let viewModel: PhotoSearchViewModel
+    private let disposeBag = DisposeBag()
     
     private let searchBar: UISearchBar = {
         let searchBar = UISearchBar()
@@ -21,9 +24,15 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .vertical
+        layout.minimumLineSpacing = 12
+        layout.minimumInteritemSpacing = 12
         
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.backgroundColor = .systemBackground
+        collectionView.register(
+            PhotoCollectionViewCell.self,
+            forCellWithReuseIdentifier: PhotoCollectionViewCell.identifier
+        )
         return collectionView
     }()
     
@@ -44,20 +53,28 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
         return indicator
     }()
     
+    init(viewModel: PhotoSearchViewModel = PhotoSearchViewModel()) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         print("PhotoSearchViewController loaded")
         
         setupUI()
         setupLayout()
-        setupCollectionView()
-        setupSearchBar()
-        applyState()
+        setupBindings()
     }
 }
 
 private extension PhotoSearchViewController {
     
+    // 画面上のUI部品を追加する
     func setupUI() {
         title = "PixFinder"
         view.backgroundColor = .systemBackground
@@ -68,6 +85,7 @@ private extension PhotoSearchViewController {
         view.addSubview(loadingIndicator)
     }
     
+    // Auto Layoutで各UI部品の位置を設定する
     func setupLayout() {
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         collectionView.translatesAutoresizingMaskIntoConstraints = false
@@ -94,108 +112,101 @@ private extension PhotoSearchViewController {
         ])
     }
     
-    func setupCollectionView() {
-        collectionView.dataSource = self
-        collectionView.delegate = self
-        collectionView.register(
-            PhotoCollectionViewCell.self,
-            forCellWithReuseIdentifier: PhotoCollectionViewCell.identifier
-        )
-    }
+    func setupBindings() {
+            let resetTrigger = searchBar.rx.text.orEmpty
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                .distinctUntilChanged()
+                .filter { $0 }
+                .map { _ in () }
+                .asObservable()
+
+            let input = PhotoSearchViewModel.Input(
+                searchText: searchBar.rx.text.orEmpty.asObservable(),
+                searchButtonTapped: searchBar.rx.searchButtonClicked.asObservable(),
+                resetTrigger: resetTrigger,
+                itemSelected: collectionView.rx.itemSelected.asObservable()
+            )
+
+            let output = viewModel.transform(input: input)
+
+            bindPhotos(output.photos)
+            bindLoading(output.isLoading)
+            bindMessage(output.message)
+            bindSelection(output.selectedPhoto)
+
+            searchBar.rx.searchButtonClicked
+                .subscribe(onNext: { [weak self] in
+                    self?.searchBar.resignFirstResponder()
+                })
+                .disposed(by: disposeBag)
+
+            collectionView.rx.setDelegate(self)
+                .disposed(by: disposeBag)
+        }
     
-    func setupSearchBar() {
-        searchBar.delegate = self
-    }
+    func bindPhotos(_ photos: Driver<[Photo]>) {
+            photos
+                .drive(
+                    collectionView.rx.items(
+                        cellIdentifier: PhotoCollectionViewCell.identifier,
+                        cellType: PhotoCollectionViewCell.self
+                    )
+                ) { _, photo, cell in
+                    cell.configure(with: photo)
+                }
+                .disposed(by: disposeBag)
+
+            photos
+                .map { !$0.isEmpty }
+                .drive(onNext: { [weak self] hasPhotos in
+                    guard let self = self else { return }
+                    self.collectionView.isHidden = !hasPhotos
+                })
+                .disposed(by: disposeBag)
+        }
+
+        func bindLoading(_ isLoading: Driver<Bool>) {
+            isLoading
+                .drive(onNext: { [weak self] loading in
+                    guard let self = self else { return }
+
+                    if loading {
+                        self.loadingIndicator.startAnimating()
+                        self.collectionView.isHidden = true
+                        self.emptyStateLabel.isHidden = true
+                    } else {
+                        self.loadingIndicator.stopAnimating()
+                    }
+                })
+                .disposed(by: disposeBag)
+        }
+
+        func bindMessage(_ message: Driver<String?>) {
+            message
+                .drive(onNext: { [weak self] message in
+                    guard let self = self else { return }
+
+                    self.emptyStateLabel.text = message
+                    let shouldShowMessage = !(message?.isEmpty ?? true)
+                    self.emptyStateLabel.isHidden = !shouldShowMessage
+                })
+                .disposed(by: disposeBag)
+        }
+
+        func bindSelection(_ selectedPhoto: Signal<Photo>) {
+            selectedPhoto
+                .emit(onNext: { [weak self] photo in
+                    guard let self = self else { return }
+                    print("写真選択: id=\(photo.id), photographer=\(photo.photographerName)")
+                    let detailViewController = PhotoDetailViewController(photo: photo)
+                    self.navigationController?.pushViewController(detailViewController, animated: true)
+                })
+                .disposed(by: disposeBag)
+        }
 }
 
-extension PhotoSearchViewController {
-    
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        let keyword = searchBar.text ?? ""
-        searchBar.resignFirstResponder()
+extension PhotoSearchViewController: UICollectionViewDelegateFlowLayout {
 
-        viewModel.search(keyword: keyword) { [weak self] in
-            self?.applyState()
-        }
-    }
-    
-    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        let keyword = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if keyword.isEmpty {
-            viewModel.resetSearch { [weak self] in
-                self?.applyState()
-            }
-        }
-    }
-    
-    // ViewModelの状態に応じて画面表示を更新する
-    func applyState() {
-        switch viewModel.state {
-
-        case .initial(let message):
-            emptyStateLabel.text = message
-            collectionView.reloadData()
-            updateEmptyState()
-
-        case .loading:
-            updateLoadingState(isLoading: true)
-
-        case .loaded:
-            collectionView.reloadData()
-            updateLoadingState(isLoading: false)
-
-        case .empty(let message):
-            emptyStateLabel.text = message
-            collectionView.reloadData()
-            updateLoadingState(isLoading: false)
-
-        case .error(let message):
-            emptyStateLabel.text = message
-            collectionView.reloadData()
-            updateLoadingState(isLoading: false)
-        }
-    }
-    
-    func updateEmptyState() {
-        let isEmpty = viewModel.photos.isEmpty
-        emptyStateLabel.isHidden = !isEmpty
-        collectionView.isHidden = isEmpty
-    }
-    
-    // ローディング状態の表示を切り替える
-    func updateLoadingState(isLoading: Bool) {
-        if isLoading {
-            loadingIndicator.startAnimating()
-            collectionView.isHidden = true
-            emptyStateLabel.isHidden = true
-        } else {
-            loadingIndicator.stopAnimating()
-            updateEmptyState()
-        }
-    }
-}
-
-extension PhotoSearchViewController {
-    
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return viewModel.photos.count
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let cell = collectionView.dequeueReusableCell(
-            withReuseIdentifier: PhotoCollectionViewCell.identifier,
-            for: indexPath
-        ) as? PhotoCollectionViewCell else {
-            return UICollectionViewCell()
-        }
-        
-        let photo = viewModel.photos[indexPath.item]
-        cell.configure(with: photo)
-        
-        return cell
-    }
-    
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -203,12 +214,5 @@ extension PhotoSearchViewController {
         let totalSpacing = spacing
         let width = (collectionView.bounds.width - totalSpacing) / 2
         return CGSize(width: width, height: width + 24)
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let photo = viewModel.photos[indexPath.item]
-        print("写真選択: id=\(photo.id), photographer=\(photo.photographerName)")
-        let detailViewController = PhotoDetailViewController(photo: photo)
-        navigationController?.pushViewController(detailViewController, animated: true)
     }
 }

@@ -6,10 +6,11 @@
 //
 
 import Foundation
+import RxSwift
+import RxCocoa
 
 final class PhotoSearchViewModel {
 
-    // 画面に表示するメッセージを管理する
     enum Message {
         static let initial = "Please enter a keyword to search."
         static let empty = "No photos found."
@@ -17,76 +18,107 @@ final class PhotoSearchViewModel {
         static let decodeError = "Failed to parse response."
     }
 
-    private let photoRepository: PhotoRepositoryProtocol
-
-    private(set) var state: PhotoSearchState = .initial(message: Message.initial)
-    
-    // 現在の表示用画像リストを取得する
-    var photos: [Photo] {
-        switch state {
-        case .loaded(let photos):
-            return photos
-        default:
-            return []
-        }
+    struct Input {
+        let searchText: Observable<String>
+        let searchButtonTapped: Observable<Void>
+        let resetTrigger: Observable<Void>
+        let itemSelected: Observable<IndexPath>
     }
+
+    struct Output {
+        let photos: Driver<[Photo]>
+        let isLoading: Driver<Bool>
+        let message: Driver<String?>
+        let selectedPhoto: Signal<Photo>
+    }
+
+    private let photoRepository: PhotoRepositoryProtocol
+    private let disposeBag = DisposeBag()
 
     init(photoRepository: PhotoRepositoryProtocol = PhotoRepository()) {
         self.photoRepository = photoRepository
     }
 
-    // 検索キーワードに応じて画像検索を実行する
-    func search(keyword: String, completion: @escaping () -> Void) {
-        let trimmedKeyword = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
+    func transform(input: Input) -> Output {
+        let photosRelay = BehaviorRelay<[Photo]>(value: [])
+        let loadingRelay = BehaviorRelay<Bool>(value: false)
+        let messageRelay = BehaviorRelay<String?>(value: Message.initial)
 
-        // 検索キーワードが未入力の場合は初期状態に戻す
-        guard !trimmedKeyword.isEmpty else {
-            state = .initial(message: Message.initial)
-            print("検索キーワード未入力")
-            completion()
-            return
-        }
+        let trimmedKeyword = input.searchText
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-        state = .loading
-        print("API検索開始: keyword=\(trimmedKeyword)")
-        completion()
+        input.resetTrigger
+            .subscribe(onNext: {
+                photosRelay.accept([])
+                messageRelay.accept(Message.initial)
+                loadingRelay.accept(false)
+                print("検索条件クリア: 初期状態に戻す")
+            })
+            .disposed(by: disposeBag)
 
-        photoRepository.searchPhotos(query: trimmedKeyword) { [weak self] result in
-            guard let self = self else { return }
+        input.searchButtonTapped
+            .withLatestFrom(trimmedKeyword)
+            .subscribe(onNext: { [weak self] keyword in
+                guard let self = self else { return }
 
-            switch result {
-            case .success(let photos):
-                if photos.isEmpty {
-                    self.state = .empty(message: Message.empty)
-                    print("API検索成功: keyword=\(trimmedKeyword), count=0")
-                } else {
-                    self.state = .loaded(photos)
-                    print("API検索成功: keyword=\(trimmedKeyword), count=\(photos.count)")
+                guard !keyword.isEmpty else {
+                    photosRelay.accept([])
+                    messageRelay.accept(Message.initial)
+                    loadingRelay.accept(false)
+                    print("検索キーワード未入力")
+                    return
                 }
 
-            case .failure(let error):
-                let nsError = error as NSError
+                loadingRelay.accept(true)
+                messageRelay.accept(nil)
+                print("API検索開始: keyword=\(keyword)")
 
-                // ここでは仮にデコード系エラーを簡易判定する
-                if nsError.domain == NSCocoaErrorDomain {
-                    self.state = .error(message: Message.decodeError)
-                    print("デコード失敗: \(error)")
-                } else {
-                    self.state = .error(message: Message.networkError)
-                    print("API検索失敗: \(error.localizedDescription)")
-                }
+                self.photoRepository.searchPhotos(query: keyword)
+                    .observe(on: MainScheduler.instance)
+                    .subscribe(
+                        onSuccess: { photos in
+                            loadingRelay.accept(false)
+                            photosRelay.accept(photos)
+
+                            if photos.isEmpty {
+                                messageRelay.accept(Message.empty)
+                                print("API検索成功: keyword=\(keyword), count=0")
+                            } else {
+                                messageRelay.accept(nil)
+                                print("API検索成功: keyword=\(keyword), count=\(photos.count)")
+                            }
+                        },
+                        onFailure: { error in
+                            loadingRelay.accept(false)
+                            photosRelay.accept([])
+
+                            let nsError = error as NSError
+                            if nsError.domain == NSCocoaErrorDomain {
+                                messageRelay.accept(Message.decodeError)
+                                print("デコード失敗: \(error)")
+                            } else {
+                                messageRelay.accept(Message.networkError)
+                                print("API検索失敗: \(error.localizedDescription)")
+                            }
+                        }
+                    )
+                    .disposed(by: self.disposeBag)
+            })
+            .disposed(by: disposeBag)
+
+        let selectedPhoto = input.itemSelected
+            .withLatestFrom(photosRelay.asObservable()) { indexPath, photos -> Photo? in
+                guard indexPath.item < photos.count else { return nil }
+                return photos[indexPath.item]
             }
+            .compactMap { $0 }
+            .asSignal(onErrorSignalWith: .empty())
 
-            DispatchQueue.main.async {
-                completion()
-            }
-        }
-    }
-
-    // 検索条件をクリアして初期状態に戻す
-    func resetSearch(completion: @escaping () -> Void) {
-        state = .initial(message: Message.initial)
-        print("検索条件クリア: 初期状態に戻す")
-        completion()
+        return Output(
+            photos: photosRelay.asDriver(),
+            isLoading: loadingRelay.asDriver(),
+            message: messageRelay.asDriver(),
+            selectedPhoto: selectedPhoto
+        )
     }
 }
