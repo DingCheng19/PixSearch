@@ -39,6 +39,8 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
     ]
 
     private var displayedPhotos: [Photo] = []
+    
+    private let networkService = NetworkService()
 
     private let searchBar: UISearchBar = {
         let searchBar = UISearchBar()
@@ -84,6 +86,8 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
         setupCollectionView()
         setupSearchBar()
         updateEmptyState()
+        
+        testAPISearch()
     }
 }
 
@@ -195,6 +199,30 @@ extension PhotoSearchViewController {
         } else {
             loadingIndicator.stopAnimating()
             updateEmptyState()
+        }
+    }
+    
+    func testAPISearch() {
+        networkService.searchPhotos(query: "nature") { result in
+            switch result {
+            case .success(let data):
+                do {
+                    let response = try JSONDecoder().decode(SearchPhotosResponseDTO.self, from: data)
+                    print("デコード成功: count=\(response.photos.count)")
+
+                    if let firstPhoto = response.photos.first {
+                        print("first photo id: \(firstPhoto.id)")
+                        print("first photographer: \(firstPhoto.photographer)")
+                        print("first medium url: \(firstPhoto.src.medium)")
+                        print("first original url: \(firstPhoto.src.original)")
+                    }
+                } catch {
+                    print("デコード失敗: \(error)")
+                }
+
+            case .failure(let error):
+                print("APIエラー: \(error.localizedDescription)")
+            }
         }
     }
 }
