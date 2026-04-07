@@ -9,7 +9,6 @@ import UIKit
 
 final class PhotoSearchViewController: UIViewController , UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UISearchBarDelegate{
     
-    private var displayedPhotos: [Photo] = []
     private let viewModel = PhotoSearchViewModel()
     
     private let searchBar: UISearchBar = {
@@ -133,8 +132,8 @@ extension PhotoSearchViewController {
     // ViewModelの状態に応じて画面表示を更新する
     func applyState() {
         switch viewModel.state {
+
         case .initial(let message):
-            displayedPhotos = []
             emptyStateLabel.text = message
             collectionView.reloadData()
             updateEmptyState()
@@ -142,19 +141,16 @@ extension PhotoSearchViewController {
         case .loading:
             updateLoadingState(isLoading: true)
 
-        case .loaded(let photos):
-            displayedPhotos = photos
+        case .loaded:
             collectionView.reloadData()
             updateLoadingState(isLoading: false)
 
         case .empty(let message):
-            displayedPhotos = []
             emptyStateLabel.text = message
             collectionView.reloadData()
             updateLoadingState(isLoading: false)
 
         case .error(let message):
-            displayedPhotos = []
             emptyStateLabel.text = message
             collectionView.reloadData()
             updateLoadingState(isLoading: false)
@@ -162,7 +158,7 @@ extension PhotoSearchViewController {
     }
     
     func updateEmptyState() {
-        let isEmpty = displayedPhotos.isEmpty
+        let isEmpty = viewModel.photos.isEmpty
         emptyStateLabel.isHidden = !isEmpty
         collectionView.isHidden = isEmpty
     }
@@ -183,7 +179,7 @@ extension PhotoSearchViewController {
 extension PhotoSearchViewController {
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return displayedPhotos.count
+        return viewModel.photos.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -194,7 +190,7 @@ extension PhotoSearchViewController {
             return UICollectionViewCell()
         }
         
-        let photo = displayedPhotos[indexPath.item]
+        let photo = viewModel.photos[indexPath.item]
         cell.configure(with: photo)
         
         return cell
@@ -210,7 +206,7 @@ extension PhotoSearchViewController {
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let photo = displayedPhotos[indexPath.item]
+        let photo = viewModel.photos[indexPath.item]
         print("写真選択: id=\(photo.id), photographer=\(photo.photographerName)")
         let detailViewController = PhotoDetailViewController(photo: photo)
         navigationController?.pushViewController(detailViewController, animated: true)

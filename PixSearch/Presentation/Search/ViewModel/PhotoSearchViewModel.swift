@@ -20,6 +20,16 @@ final class PhotoSearchViewModel {
     private let photoRepository: PhotoRepositoryProtocol
 
     private(set) var state: PhotoSearchState = .initial(message: Message.initial)
+    
+    // 現在の表示用画像リストを取得する
+    var photos: [Photo] {
+        switch state {
+        case .loaded(let photos):
+            return photos
+        default:
+            return []
+        }
+    }
 
     init(photoRepository: PhotoRepositoryProtocol = PhotoRepository()) {
         self.photoRepository = photoRepository
