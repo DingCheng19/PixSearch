@@ -16,6 +16,9 @@
 		7EB3F9812F84B3A200BF93E0 /* PixSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB3F9802F84B3A200BF93E0 /* PixSearchTests.swift */; };
 		7EB3F98B2F84B3A200BF93E0 /* PixSearchUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB3F98A2F84B3A200BF93E0 /* PixSearchUITests.swift */; };
 		7EB3F98D2F84B3A200BF93E0 /* PixSearchUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB3F98C2F84B3A200BF93E0 /* PixSearchUITestsLaunchTests.swift */; };
+		7EB3F99D2F84B65800BF93E0 /* PhotoSearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB3F99C2F84B65800BF93E0 /* PhotoSearchViewController.swift */; };
+		7EB3F9A12F84B69300BF93E0 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 7EB3F9A02F84B69300BF93E0 /* RxSwift */; };
+		7EB3F9A32F84B69B00BF93E0 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = 7EB3F9A22F84B69B00BF93E0 /* RxCocoa */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +52,7 @@
 		7EB3F9862F84B3A200BF93E0 /* PixSearchUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PixSearchUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7EB3F98A2F84B3A200BF93E0 /* PixSearchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixSearchUITests.swift; sourceTree = "<group>"; };
 		7EB3F98C2F84B3A200BF93E0 /* PixSearchUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixSearchUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		7EB3F99C2F84B65800BF93E0 /* PhotoSearchViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSearchViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +60,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7EB3F9A32F84B69B00BF93E0 /* RxCocoa in Frameworks */,
+				7EB3F9A12F84B69300BF93E0 /* RxSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -83,6 +89,7 @@
 				7EB3F97F2F84B3A200BF93E0 /* PixSearchTests */,
 				7EB3F9892F84B3A200BF93E0 /* PixSearchUITests */,
 				7EB3F9672F84B3A000BF93E0 /* Products */,
+				7EB3F99F2F84B69300BF93E0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -99,6 +106,7 @@
 		7EB3F9682F84B3A000BF93E0 /* PixSearch */ = {
 			isa = PBXGroup;
 			children = (
+				7EB3F9992F84B5E000BF93E0 /* Presentation */,
 				7EB3F9692F84B3A000BF93E0 /* AppDelegate.swift */,
 				7EB3F96B2F84B3A000BF93E0 /* SceneDelegate.swift */,
 				7EB3F96D2F84B3A000BF93E0 /* ViewController.swift */,
@@ -127,6 +135,37 @@
 			path = PixSearchUITests;
 			sourceTree = "<group>";
 		};
+		7EB3F9992F84B5E000BF93E0 /* Presentation */ = {
+			isa = PBXGroup;
+			children = (
+				7EB3F99A2F84B61500BF93E0 /* Search */,
+			);
+			path = Presentation;
+			sourceTree = "<group>";
+		};
+		7EB3F99A2F84B61500BF93E0 /* Search */ = {
+			isa = PBXGroup;
+			children = (
+				7EB3F99B2F84B62400BF93E0 /* View */,
+			);
+			path = Search;
+			sourceTree = "<group>";
+		};
+		7EB3F99B2F84B62400BF93E0 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				7EB3F99C2F84B65800BF93E0 /* PhotoSearchViewController.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		7EB3F99F2F84B69300BF93E0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -143,6 +182,10 @@
 			dependencies = (
 			);
 			name = PixSearch;
+			packageProductDependencies = (
+				7EB3F9A02F84B69300BF93E0 /* RxSwift */,
+				7EB3F9A22F84B69B00BF93E0 /* RxCocoa */,
+			);
 			productName = PixSearch;
 			productReference = 7EB3F9662F84B3A000BF93E0 /* PixSearch.app */;
 			productType = "com.apple.product-type.application";
@@ -215,6 +258,9 @@
 				Base,
 			);
 			mainGroup = 7EB3F95D2F84B3A000BF93E0;
+			packageReferences = (
+				7EB3F99E2F84B68400BF93E0 /* XCRemoteSwiftPackageReference "RxSwift" */,
+			);
 			productRefGroup = 7EB3F9672F84B3A000BF93E0 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -259,6 +305,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7EB3F96E2F84B3A000BF93E0 /* ViewController.swift in Sources */,
+				7EB3F99D2F84B65800BF93E0 /* PhotoSearchViewController.swift in Sources */,
 				7EB3F96A2F84B3A000BF93E0 /* AppDelegate.swift in Sources */,
 				7EB3F96C2F84B3A000BF93E0 /* SceneDelegate.swift in Sources */,
 			);
@@ -601,6 +648,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7EB3F99E2F84B68400BF93E0 /* XCRemoteSwiftPackageReference "RxSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ReactiveX/RxSwift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.10.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7EB3F9A02F84B69300BF93E0 /* RxSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7EB3F99E2F84B68400BF93E0 /* XCRemoteSwiftPackageReference "RxSwift" */;
+			productName = RxSwift;
+		};
+		7EB3F9A22F84B69B00BF93E0 /* RxCocoa */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7EB3F99E2F84B68400BF93E0 /* XCRemoteSwiftPackageReference "RxSwift" */;
+			productName = RxCocoa;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7EB3F95E2F84B3A000BF93E0 /* Project object */;
 }
