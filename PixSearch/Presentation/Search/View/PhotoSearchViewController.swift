@@ -208,13 +208,15 @@ extension PhotoSearchViewController {
             case .success(let data):
                 do {
                     let response = try JSONDecoder().decode(SearchPhotosResponseDTO.self, from: data)
-                    print("デコード成功: count=\(response.photos.count)")
+                    let photos = response.photos.map { Photo(dto: $0) }
 
-                    if let firstPhoto = response.photos.first {
+                    print("変換成功: count=\(photos.count)")
+
+                    if let firstPhoto = photos.first {
                         print("first photo id: \(firstPhoto.id)")
-                        print("first photographer: \(firstPhoto.photographer)")
-                        print("first medium url: \(firstPhoto.src.medium)")
-                        print("first original url: \(firstPhoto.src.original)")
+                        print("first photographer: \(firstPhoto.photographerName)")
+                        print("first thumbnailURL: \(firstPhoto.thumbnailURL?.absoluteString ?? "")")
+                        print("first originalURL: \(firstPhoto.originalURL?.absoluteString ?? "")")
                     }
                 } catch {
                     print("デコード失敗: \(error)")
