@@ -6,49 +6,69 @@
 //
 
 import XCTest
+import RxSwift
+import RxCocoa
 @testable import PixSearch
 
 final class PhotoSearchViewModelTests: XCTestCase {
 
+    private var disposeBag: DisposeBag!
     private var mockRepository: MockPhotoRepository!
     private var viewModel: PhotoSearchViewModel!
 
     override func setUp() {
         super.setUp()
+        disposeBag = DisposeBag()
         mockRepository = MockPhotoRepository()
         viewModel = PhotoSearchViewModel(photoRepository: mockRepository)
     }
 
     override func tearDown() {
+        disposeBag = nil
         mockRepository = nil
         viewModel = nil
         super.tearDown()
     }
 
-    // MARK: - Test Cases
+    /// 検索キーワードが空の場合、初期メッセージが出力されることを確認する
+    func test_search_withEmptyKeyword_emitsInitialMessage() {
+        let searchText = PublishSubject<String>()
+        let searchButtonTapped = PublishSubject<Void>()
+        let resetTrigger = PublishSubject<Void>()
+        let itemSelected = PublishSubject<IndexPath>()
 
-    /// 検索キーワードが空の場合、状態が初期状態（.initial）になることを確認する
-    func test_search_withEmptyKeyword_setsInitialState() {
-        let expectation = expectation(description: "Completion called")
+        let input = PhotoSearchViewModel.Input(
+            searchText: searchText.asObservable(),
+            searchButtonTapped: searchButtonTapped.asObservable(),
+            resetTrigger: resetTrigger.asObservable(),
+            itemSelected: itemSelected.asObservable()
+        )
 
-        // 空白のみのキーワードを指定
-        viewModel.search(keyword: "   ") {
-            expectation.fulfill()
-        }
+        let output = viewModel.transform(input: input)
+
+        let expectation = expectation(description: "Initial message emitted")
+        var receivedMessage: String?
+        var didFulfill = false
+
+        output.message
+            .drive(onNext: { message in
+                if message == PhotoSearchViewModel.Message.initial, !didFulfill {
+                    didFulfill = true
+                    receivedMessage = message
+                    expectation.fulfill()
+                }
+            })
+            .disposed(by: disposeBag)
+
+        searchText.onNext("   ")
+        searchButtonTapped.onNext(())
 
         waitForExpectations(timeout: 1.0)
-
-        // stateが.initialになっていることを検証
-        switch viewModel.state {
-        case .initial(let message):
-            XCTAssertEqual(message, PhotoSearchViewModel.Message.initial)
-        default:
-            XCTFail("Expected state to be .initial")
-        }
+        XCTAssertEqual(receivedMessage, PhotoSearchViewModel.Message.initial)
     }
 
-    /// 検索結果が存在する場合、状態が.loadedになり、データが正しく設定されることを確認する
-    func test_search_withPhotos_setsLoadedState() {
+    /// 検索結果が存在する場合、画像一覧が出力されることを確認する
+    func test_search_withPhotos_emitsLoadedPhotos() {
         let photos = [
             Photo(
                 id: 1,
@@ -57,72 +77,115 @@ final class PhotoSearchViewModelTests: XCTestCase {
                 originalURL: URL(string: "https://example.com/original.jpg")
             )
         ]
-
-        // モックの戻り値を設定（成功＋データあり）
         mockRepository.result = .success(photos)
 
-        let expectation = expectation(description: "Completion called")
+        let searchText = PublishSubject<String>()
+        let searchButtonTapped = PublishSubject<Void>()
+        let resetTrigger = PublishSubject<Void>()
+        let itemSelected = PublishSubject<IndexPath>()
 
-        viewModel.search(keyword: "nature") {
-            expectation.fulfill()
-        }
+        let input = PhotoSearchViewModel.Input(
+            searchText: searchText.asObservable(),
+            searchButtonTapped: searchButtonTapped.asObservable(),
+            resetTrigger: resetTrigger.asObservable(),
+            itemSelected: itemSelected.asObservable()
+        )
+
+        let output = viewModel.transform(input: input)
+
+        let expectation = expectation(description: "Photos emitted")
+        var receivedPhotos: [Photo] = []
+
+        output.photos
+            .drive(onNext: { photos in
+                if !photos.isEmpty {
+                    receivedPhotos = photos
+                    expectation.fulfill()
+                }
+            })
+            .disposed(by: disposeBag)
+
+        searchText.onNext("nature")
+        searchButtonTapped.onNext(())
 
         waitForExpectations(timeout: 1.0)
-
-        // stateが.loadedであり、データが一致していることを検証
-        switch viewModel.state {
-        case .loaded(let loadedPhotos):
-            XCTAssertEqual(loadedPhotos.count, 1)
-            XCTAssertEqual(loadedPhotos.first?.id, 1)
-            XCTAssertEqual(loadedPhotos.first?.photographerName, "Alice")
-        default:
-            XCTFail("Expected state to be .loaded")
-        }
+        XCTAssertEqual(receivedPhotos.count, 1)
+        XCTAssertEqual(receivedPhotos.first?.id, 1)
+        XCTAssertEqual(receivedPhotos.first?.photographerName, "Alice")
     }
 
-    /// 検索結果が0件の場合、状態が.emptyになることを確認する
-    func test_search_withEmptyResult_setsEmptyState() {
-        // モックの戻り値を設定（成功＋空配列）
+    /// 検索結果が0件の場合、emptyメッセージが出力されることを確認する
+    func test_search_withEmptyResult_emitsEmptyMessage() {
         mockRepository.result = .success([])
 
-        let expectation = expectation(description: "Completion called")
+        let searchText = PublishSubject<String>()
+        let searchButtonTapped = PublishSubject<Void>()
+        let resetTrigger = PublishSubject<Void>()
+        let itemSelected = PublishSubject<IndexPath>()
 
-        viewModel.search(keyword: "nature") {
-            expectation.fulfill()
-        }
+        let input = PhotoSearchViewModel.Input(
+            searchText: searchText.asObservable(),
+            searchButtonTapped: searchButtonTapped.asObservable(),
+            resetTrigger: resetTrigger.asObservable(),
+            itemSelected: itemSelected.asObservable()
+        )
+
+        let output = viewModel.transform(input: input)
+
+        let expectation = expectation(description: "Empty message emitted")
+        var receivedMessage: String?
+
+        output.message
+            .drive(onNext: { message in
+                if message == PhotoSearchViewModel.Message.empty {
+                    receivedMessage = message
+                    expectation.fulfill()
+                }
+            })
+            .disposed(by: disposeBag)
+
+        searchText.onNext("nature")
+        searchButtonTapped.onNext(())
 
         waitForExpectations(timeout: 1.0)
-
-        // stateが.emptyになっていることを検証
-        switch viewModel.state {
-        case .empty(let message):
-            XCTAssertEqual(message, PhotoSearchViewModel.Message.empty)
-        default:
-            XCTFail("Expected state to be .empty")
-        }
+        XCTAssertEqual(receivedMessage, PhotoSearchViewModel.Message.empty)
     }
 
-    /// 検索処理が失敗した場合、状態が.errorになることを確認する
-    func test_search_withFailure_setsErrorState() {
+    /// 検索処理が失敗した場合、errorメッセージが出力されることを確認する
+    func test_search_withFailure_emitsErrorMessage() {
         let error = NSError(domain: "TestError", code: 1)
-
-        // モックの戻り値を設定（失敗）
         mockRepository.result = .failure(error)
 
-        let expectation = expectation(description: "Completion called")
+        let searchText = PublishSubject<String>()
+        let searchButtonTapped = PublishSubject<Void>()
+        let resetTrigger = PublishSubject<Void>()
+        let itemSelected = PublishSubject<IndexPath>()
 
-        viewModel.search(keyword: "nature") {
-            expectation.fulfill()
-        }
+        let input = PhotoSearchViewModel.Input(
+            searchText: searchText.asObservable(),
+            searchButtonTapped: searchButtonTapped.asObservable(),
+            resetTrigger: resetTrigger.asObservable(),
+            itemSelected: itemSelected.asObservable()
+        )
+
+        let output = viewModel.transform(input: input)
+
+        let expectation = expectation(description: "Error message emitted")
+        var receivedMessage: String?
+
+        output.message
+            .drive(onNext: { message in
+                if message == PhotoSearchViewModel.Message.networkError {
+                    receivedMessage = message
+                    expectation.fulfill()
+                }
+            })
+            .disposed(by: disposeBag)
+
+        searchText.onNext("nature")
+        searchButtonTapped.onNext(())
 
         waitForExpectations(timeout: 1.0)
-
-        // stateが.errorになっていることを検証
-        switch viewModel.state {
-        case .error(let message):
-            XCTAssertEqual(message, PhotoSearchViewModel.Message.networkError)
-        default:
-            XCTFail("Expected state to be .error")
-        }
+        XCTAssertEqual(receivedMessage, PhotoSearchViewModel.Message.networkError)
     }
 }
