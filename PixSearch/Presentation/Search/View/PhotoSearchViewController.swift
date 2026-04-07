@@ -10,33 +10,6 @@ import RxSwift
 import RxCocoa
 
 final class PhotoSearchViewController: UIViewController , UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UISearchBarDelegate{
-    
-    private let allPhotos: [Photo] = [
-        Photo(
-            id: 1,
-            photographerName: "Alice",
-            thumbnailURL: URL(string: "https://images.pexels.com/photos/414612/pexels-photo-414612.jpeg"),
-            originalURL: URL(string: "https://images.pexels.com/photos/414612/pexels-photo-414612.jpeg")
-        ),
-        Photo(
-            id: 2,
-            photographerName: "Bob",
-            thumbnailURL: URL(string: "https://images.pexels.com/photos/34950/pexels-photo.jpg"),
-            originalURL: URL(string: "https://images.pexels.com/photos/34950/pexels-photo.jpg")
-        ),
-        Photo(
-            id: 3,
-            photographerName: "Charlie",
-            thumbnailURL: URL(string: "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg"),
-            originalURL: URL(string: "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg")
-        ),
-        Photo(
-            id: 4,
-            photographerName: "David",
-            thumbnailURL: URL(string: "https://images.pexels.com/photos/674010/pexels-photo-674010.jpeg"),
-            originalURL: URL(string: "https://images.pexels.com/photos/674010/pexels-photo-674010.jpeg")
-        )
-    ]
 
     private var displayedPhotos: [Photo] = []
     
@@ -60,12 +33,12 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
     
     private let emptyStateLabel: UILabel = {
         let label = UILabel()
-        label.text = "No photos found."
+        label.text = "Please enter a keyword to search."
         label.textColor = .secondaryLabel
         label.font = .systemFont(ofSize: 16)
         label.textAlignment = .center
         label.numberOfLines = 0
-        label.isHidden = true
+        label.isHidden = false
         return label
     }()
     
@@ -79,15 +52,11 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
         super.viewDidLoad()
         print("PhotoSearchViewController loaded")
         
-        displayedPhotos = allPhotos
-        
         setupUI()
         setupLayout()
         setupCollectionView()
         setupSearchBar()
         updateEmptyState()
-        
-        testAPISearch()
     }
 }
 
@@ -144,43 +113,74 @@ private extension PhotoSearchViewController {
 }
 
 extension PhotoSearchViewController {
+    
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         let keyword = searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         searchBar.resignFirstResponder()
+
+        // 検索キーワードが空の場合は初期状態に戻す
+        guard !keyword.isEmpty else {
+            displayedPhotos = []
+            collectionView.reloadData()
+            emptyStateLabel.text = "Please enter a keyword to search."
+            updateEmptyState()
+            print("検索キーワード未入力")
+            return
+        }
+
         updateLoadingState(isLoading: true)
+        print("API検索開始: keyword=\(keyword)")
 
-        print("検索開始: keyword=\(keyword)")
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+        networkService.searchPhotos(query: keyword) { [weak self] result in
             guard let self = self else { return }
 
-            // 検索キーワードが空の場合は全件表示する
-            if keyword.isEmpty {
-                self.displayedPhotos = self.allPhotos
-            } else {
-                // 撮影者名で部分一致検索を行う
-                self.displayedPhotos = self.allPhotos.filter {
-                    $0.photographerName.localizedCaseInsensitiveContains(keyword)
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let data):
+                    do {
+                        let response = try JSONDecoder().decode(SearchPhotosResponseDTO.self, from: data)
+                        self.displayedPhotos = response.photos.map { Photo(dto: $0) }
+
+                        if self.displayedPhotos.isEmpty {
+                            self.emptyStateLabel.text = "No photos found."
+                        }
+
+                        self.collectionView.reloadData()
+                        self.updateLoadingState(isLoading: false)
+
+                        print("API検索成功: keyword=\(keyword), count=\(self.displayedPhotos.count)")
+                    } catch {
+                        self.displayedPhotos = []
+                        self.emptyStateLabel.text = "Failed to parse response."
+                        self.collectionView.reloadData()
+                        self.updateLoadingState(isLoading: false)
+
+                        print("デコード失敗: \(error)")
+                    }
+
+                case .failure(let error):
+                    self.displayedPhotos = []
+                    self.emptyStateLabel.text = "Network error. Please try again."
+                    self.collectionView.reloadData()
+                    self.updateLoadingState(isLoading: false)
+
+                    print("API検索失敗: \(error.localizedDescription)")
                 }
             }
-
-            self.collectionView.reloadData()
-            self.updateLoadingState(isLoading: false)
-
-            print("検索完了: keyword=\(keyword), count=\(self.displayedPhotos.count)")
         }
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         let keyword = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         if keyword.isEmpty {
-            displayedPhotos = allPhotos
+            displayedPhotos = []
             collectionView.reloadData()
+            emptyStateLabel.text = "Please enter a keyword to search."
             updateEmptyState()
-            
-            print("検索条件クリア: 全件表示に戻す")
+
+            print("検索条件クリア: 初期状態に戻す")
         }
     }
     
@@ -199,32 +199,6 @@ extension PhotoSearchViewController {
         } else {
             loadingIndicator.stopAnimating()
             updateEmptyState()
-        }
-    }
-    
-    func testAPISearch() {
-        networkService.searchPhotos(query: "nature") { result in
-            switch result {
-            case .success(let data):
-                do {
-                    let response = try JSONDecoder().decode(SearchPhotosResponseDTO.self, from: data)
-                    let photos = response.photos.map { Photo(dto: $0) }
-
-                    print("変換成功: count=\(photos.count)")
-
-                    if let firstPhoto = photos.first {
-                        print("first photo id: \(firstPhoto.id)")
-                        print("first photographer: \(firstPhoto.photographerName)")
-                        print("first thumbnailURL: \(firstPhoto.thumbnailURL?.absoluteString ?? "")")
-                        print("first originalURL: \(firstPhoto.originalURL?.absoluteString ?? "")")
-                    }
-                } catch {
-                    print("デコード失敗: \(error)")
-                }
-
-            case .failure(let error):
-                print("APIエラー: \(error.localizedDescription)")
-            }
         }
     }
 }
