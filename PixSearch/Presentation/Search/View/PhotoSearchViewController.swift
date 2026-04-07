@@ -6,26 +6,23 @@
 //
 
 import UIKit
-import RxSwift
-import RxCocoa
 
 final class PhotoSearchViewController: UIViewController , UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UISearchBarDelegate{
-
-    private var displayedPhotos: [Photo] = []
     
-    private let networkService = NetworkService()
-
+    private var displayedPhotos: [Photo] = []
+    private let viewModel = PhotoSearchViewModel()
+    
     private let searchBar: UISearchBar = {
         let searchBar = UISearchBar()
         searchBar.placeholder = "Search photos"
         searchBar.searchBarStyle = .minimal
         return searchBar
     }()
-
+    
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .vertical
-
+        
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.backgroundColor = .systemBackground
         return collectionView
@@ -47,7 +44,7 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
         indicator.hidesWhenStopped = true
         return indicator
     }()
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         print("PhotoSearchViewController loaded")
@@ -56,22 +53,22 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
         setupLayout()
         setupCollectionView()
         setupSearchBar()
-        updateEmptyState()
+        applyState()
     }
 }
 
 private extension PhotoSearchViewController {
-
+    
     func setupUI() {
         title = "PixFinder"
         view.backgroundColor = .systemBackground
-
+        
         view.addSubview(searchBar)
         view.addSubview(collectionView)
         view.addSubview(emptyStateLabel)
         view.addSubview(loadingIndicator)
     }
-
+    
     func setupLayout() {
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         collectionView.translatesAutoresizingMaskIntoConstraints = false
@@ -115,59 +112,11 @@ private extension PhotoSearchViewController {
 extension PhotoSearchViewController {
     
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        let keyword = searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-
+        let keyword = searchBar.text ?? ""
         searchBar.resignFirstResponder()
 
-        // 検索キーワードが空の場合は初期状態に戻す
-        guard !keyword.isEmpty else {
-            displayedPhotos = []
-            collectionView.reloadData()
-            emptyStateLabel.text = "Please enter a keyword to search."
-            updateEmptyState()
-            print("検索キーワード未入力")
-            return
-        }
-
-        updateLoadingState(isLoading: true)
-        print("API検索開始: keyword=\(keyword)")
-
-        networkService.searchPhotos(query: keyword) { [weak self] result in
-            guard let self = self else { return }
-
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let data):
-                    do {
-                        let response = try JSONDecoder().decode(SearchPhotosResponseDTO.self, from: data)
-                        self.displayedPhotos = response.photos.map { Photo(dto: $0) }
-
-                        if self.displayedPhotos.isEmpty {
-                            self.emptyStateLabel.text = "No photos found."
-                        }
-
-                        self.collectionView.reloadData()
-                        self.updateLoadingState(isLoading: false)
-
-                        print("API検索成功: keyword=\(keyword), count=\(self.displayedPhotos.count)")
-                    } catch {
-                        self.displayedPhotos = []
-                        self.emptyStateLabel.text = "Failed to parse response."
-                        self.collectionView.reloadData()
-                        self.updateLoadingState(isLoading: false)
-
-                        print("デコード失敗: \(error)")
-                    }
-
-                case .failure(let error):
-                    self.displayedPhotos = []
-                    self.emptyStateLabel.text = "Network error. Please try again."
-                    self.collectionView.reloadData()
-                    self.updateLoadingState(isLoading: false)
-
-                    print("API検索失敗: \(error.localizedDescription)")
-                }
-            }
+        viewModel.search(keyword: keyword) { [weak self] in
+            self?.applyState()
         }
     }
     
@@ -175,12 +124,40 @@ extension PhotoSearchViewController {
         let keyword = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if keyword.isEmpty {
+            viewModel.resetSearch { [weak self] in
+                self?.applyState()
+            }
+        }
+    }
+    
+    // ViewModelの状態に応じて画面表示を更新する
+    func applyState() {
+        switch viewModel.state {
+        case .initial(let message):
             displayedPhotos = []
+            emptyStateLabel.text = message
             collectionView.reloadData()
-            emptyStateLabel.text = "Please enter a keyword to search."
             updateEmptyState()
 
-            print("検索条件クリア: 初期状態に戻す")
+        case .loading:
+            updateLoadingState(isLoading: true)
+
+        case .loaded(let photos):
+            displayedPhotos = photos
+            collectionView.reloadData()
+            updateLoadingState(isLoading: false)
+
+        case .empty(let message):
+            displayedPhotos = []
+            emptyStateLabel.text = message
+            collectionView.reloadData()
+            updateLoadingState(isLoading: false)
+
+        case .error(let message):
+            displayedPhotos = []
+            emptyStateLabel.text = message
+            collectionView.reloadData()
+            updateLoadingState(isLoading: false)
         }
     }
     
