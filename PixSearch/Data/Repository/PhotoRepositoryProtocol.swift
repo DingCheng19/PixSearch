@@ -6,7 +6,8 @@
 //
 
 import Foundation
+import RxSwift
 
 protocol PhotoRepositoryProtocol {
-    func searchPhotos(query: String, completion: @escaping (Result<[Photo], Error>) -> Void)
+    func searchPhotos(query: String) -> Single<[Photo]>
 }
