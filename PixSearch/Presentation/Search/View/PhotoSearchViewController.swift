@@ -9,7 +9,30 @@ import UIKit
 import RxSwift
 import RxCocoa
 
-final class PhotoSearchViewController: UIViewController {
+final class PhotoSearchViewController: UIViewController , UICollectionViewDataSource, UICollectionViewDelegateFlowLayout{
+    
+    private let samplePhotos: [Photo] = [
+        Photo(
+            id: 1,
+            photographerName: "Alice",
+            thumbnailURL: URL(string: "https://images.pexels.com/photos/414612/pexels-photo-414612.jpeg")
+        ),
+        Photo(
+            id: 2,
+            photographerName: "Bob",
+            thumbnailURL: URL(string: "https://images.pexels.com/photos/34950/pexels-photo.jpg")
+        ),
+        Photo(
+            id: 3,
+            photographerName: "Charlie",
+            thumbnailURL: URL(string: "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg")
+        ),
+        Photo(
+            id: 4,
+            photographerName: "David",
+            thumbnailURL: URL(string: "https://images.pexels.com/photos/674010/pexels-photo-674010.jpeg")
+        )
+    ]
 
     private let searchBar: UISearchBar = {
         let searchBar = UISearchBar()
@@ -32,6 +55,7 @@ final class PhotoSearchViewController: UIViewController {
         print("PhotoSearchViewController loaded")
         setupUI()
         setupLayout()
+        setupCollectionView()
     }
 }
 
@@ -60,4 +84,43 @@ private extension PhotoSearchViewController {
             collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
+    
+    func setupCollectionView() {
+        collectionView.dataSource = self
+        collectionView.delegate = self
+        collectionView.register(
+            PhotoCollectionViewCell.self,
+            forCellWithReuseIdentifier: PhotoCollectionViewCell.identifier
+        )
+    }
+}
+
+extension PhotoSearchViewController {
+
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return samplePhotos.count
+    }
+
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        guard let cell = collectionView.dequeueReusableCell(
+            withReuseIdentifier: PhotoCollectionViewCell.identifier,
+            for: indexPath
+        ) as? PhotoCollectionViewCell else {
+            return UICollectionViewCell()
+        }
+
+        let photo = samplePhotos[indexPath.item]
+        cell.configure(name: photo.photographerName, image: nil)
+
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView,
+                            layout collectionViewLayout: UICollectionViewLayout,
+                            sizeForItemAt indexPath: IndexPath) -> CGSize {
+            let spacing: CGFloat = 12
+            let totalSpacing = spacing
+            let width = (collectionView.bounds.width - totalSpacing) / 2
+            return CGSize(width: width, height: width + 24)
+        }
 }
