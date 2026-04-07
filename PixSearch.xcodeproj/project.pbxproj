@@ -26,6 +26,9 @@
 		7EB3F9B42F85101800BF93E0 /* NetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB3F9B32F85101800BF93E0 /* NetworkService.swift */; };
 		7EB3F9B72F85125800BF93E0 /* SearchPhotosResponseDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB3F9B62F85125800BF93E0 /* SearchPhotosResponseDTO.swift */; };
 		7EB3F9B92F85127700BF93E0 /* PhotoDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB3F9B82F85127700BF93E0 /* PhotoDTO.swift */; };
+		7EB3F9BC2F851E9000BF93E0 /* PhotoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB3F9BB2F851E9000BF93E0 /* PhotoRepository.swift */; };
+		7EB3F9BF2F85202500BF93E0 /* PhotoSearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB3F9BE2F85202500BF93E0 /* PhotoSearchViewModel.swift */; };
+		7EB3F9C12F85207800BF93E0 /* PhotoSearchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB3F9C02F85207800BF93E0 /* PhotoSearchState.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,6 +70,9 @@
 		7EB3F9B32F85101800BF93E0 /* NetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkService.swift; sourceTree = "<group>"; };
 		7EB3F9B62F85125800BF93E0 /* SearchPhotosResponseDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPhotosResponseDTO.swift; sourceTree = "<group>"; };
 		7EB3F9B82F85127700BF93E0 /* PhotoDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDTO.swift; sourceTree = "<group>"; };
+		7EB3F9BB2F851E9000BF93E0 /* PhotoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoRepository.swift; sourceTree = "<group>"; };
+		7EB3F9BE2F85202500BF93E0 /* PhotoSearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSearchViewModel.swift; sourceTree = "<group>"; };
+		7EB3F9C02F85207800BF93E0 /* PhotoSearchState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSearchState.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -163,6 +169,7 @@
 		7EB3F99A2F84B61500BF93E0 /* Search */ = {
 			isa = PBXGroup;
 			children = (
+				7EB3F9BD2F85200A00BF93E0 /* ViewModel */,
 				7EB3F99B2F84B62400BF93E0 /* View */,
 			);
 			path = Search;
@@ -219,6 +226,7 @@
 		7EB3F9AE2F84D6C800BF93E0 /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				7EB3F9BA2F851E7800BF93E0 /* Repository */,
 				7EB3F9B52F85123A00BF93E0 /* DTO */,
 				7EB3F9B22F85100100BF93E0 /* Network */,
 				7EB3F9AF2F84D76000BF93E0 /* API */,
@@ -249,6 +257,23 @@
 				7EB3F9B82F85127700BF93E0 /* PhotoDTO.swift */,
 			);
 			path = DTO;
+			sourceTree = "<group>";
+		};
+		7EB3F9BA2F851E7800BF93E0 /* Repository */ = {
+			isa = PBXGroup;
+			children = (
+				7EB3F9BB2F851E9000BF93E0 /* PhotoRepository.swift */,
+			);
+			path = Repository;
+			sourceTree = "<group>";
+		};
+		7EB3F9BD2F85200A00BF93E0 /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				7EB3F9BE2F85202500BF93E0 /* PhotoSearchViewModel.swift */,
+				7EB3F9C02F85207800BF93E0 /* PhotoSearchState.swift */,
+			);
+			path = ViewModel;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -395,11 +420,14 @@
 				7EB3F9B12F84D78400BF93E0 /* APIConfig.swift in Sources */,
 				7EB3F99D2F84B65800BF93E0 /* PhotoSearchViewController.swift in Sources */,
 				7EB3F9B42F85101800BF93E0 /* NetworkService.swift in Sources */,
+				7EB3F9C12F85207800BF93E0 /* PhotoSearchState.swift in Sources */,
 				7EB3F96A2F84B3A000BF93E0 /* AppDelegate.swift in Sources */,
 				7EB3F96C2F84B3A000BF93E0 /* SceneDelegate.swift in Sources */,
 				7EB3F9A72F84BE6600BF93E0 /* Photo.swift in Sources */,
 				7EB3F9A92F84BF4200BF93E0 /* PhotoCollectionViewCell.swift in Sources */,
+				7EB3F9BC2F851E9000BF93E0 /* PhotoRepository.swift in Sources */,
 				7EB3F9B72F85125800BF93E0 /* SearchPhotosResponseDTO.swift in Sources */,
+				7EB3F9BF2F85202500BF93E0 /* PhotoSearchViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
