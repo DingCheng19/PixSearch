@@ -11,4 +11,5 @@ struct Photo {
     let id: Int
     let photographerName: String
     let thumbnailURL: URL?
+    let originalURL: URL?
 }

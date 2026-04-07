@@ -15,22 +15,26 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
         Photo(
             id: 1,
             photographerName: "Alice",
-            thumbnailURL: URL(string: "https://images.pexels.com/photos/414612/pexels-photo-414612.jpeg")
+            thumbnailURL: URL(string: "https://images.pexels.com/photos/414612/pexels-photo-414612.jpeg"),
+            originalURL: URL(string: "https://images.pexels.com/photos/414612/pexels-photo-414612.jpeg")
         ),
         Photo(
             id: 2,
             photographerName: "Bob",
-            thumbnailURL: URL(string: "https://images.pexels.com/photos/34950/pexels-photo.jpg")
+            thumbnailURL: URL(string: "https://images.pexels.com/photos/34950/pexels-photo.jpg"),
+            originalURL: URL(string: "https://images.pexels.com/photos/34950/pexels-photo.jpg")
         ),
         Photo(
             id: 3,
             photographerName: "Charlie",
-            thumbnailURL: URL(string: "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg")
+            thumbnailURL: URL(string: "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg"),
+            originalURL: URL(string: "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg")
         ),
         Photo(
             id: 4,
             photographerName: "David",
-            thumbnailURL: URL(string: "https://images.pexels.com/photos/674010/pexels-photo-674010.jpeg")
+            thumbnailURL: URL(string: "https://images.pexels.com/photos/674010/pexels-photo-674010.jpeg"),
+            originalURL: URL(string: "https://images.pexels.com/photos/674010/pexels-photo-674010.jpeg")
         )
     ]
 
@@ -62,7 +66,7 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
 private extension PhotoSearchViewController {
 
     func setupUI() {
-        title = "PhotoFinder"
+        title = "PixFinder"
         view.backgroundColor = .systemBackground
 
         view.addSubview(searchBar)
@@ -96,11 +100,11 @@ private extension PhotoSearchViewController {
 }
 
 extension PhotoSearchViewController {
-
+    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return samplePhotos.count
     }
-
+    
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         guard let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: PhotoCollectionViewCell.identifier,
@@ -108,19 +112,25 @@ extension PhotoSearchViewController {
         ) as? PhotoCollectionViewCell else {
             return UICollectionViewCell()
         }
-
+        
         let photo = samplePhotos[indexPath.item]
         cell.configure(with: photo)
-
+        
         return cell
     }
     
     func collectionView(_ collectionView: UICollectionView,
-                            layout collectionViewLayout: UICollectionViewLayout,
-                            sizeForItemAt indexPath: IndexPath) -> CGSize {
-            let spacing: CGFloat = 12
-            let totalSpacing = spacing
-            let width = (collectionView.bounds.width - totalSpacing) / 2
-            return CGSize(width: width, height: width + 24)
-        }
+                        layout collectionViewLayout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
+        let spacing: CGFloat = 12
+        let totalSpacing = spacing
+        let width = (collectionView.bounds.width - totalSpacing) / 2
+        return CGSize(width: width, height: width + 24)
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let photo = samplePhotos[indexPath.item]
+        let detailViewController = PhotoDetailViewController(photo: photo)
+        navigationController?.pushViewController(detailViewController, animated: true)
+    }
 }
