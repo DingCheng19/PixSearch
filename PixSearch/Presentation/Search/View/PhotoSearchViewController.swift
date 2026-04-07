@@ -66,6 +66,12 @@ final class PhotoSearchViewController: UIViewController , UICollectionViewDataSo
         label.isHidden = true
         return label
     }()
+    
+    private let loadingIndicator: UIActivityIndicatorView = {
+        let indicator = UIActivityIndicatorView(style: .large)
+        indicator.hidesWhenStopped = true
+        return indicator
+    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -90,12 +96,14 @@ private extension PhotoSearchViewController {
         view.addSubview(searchBar)
         view.addSubview(collectionView)
         view.addSubview(emptyStateLabel)
+        view.addSubview(loadingIndicator)
     }
 
     func setupLayout() {
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         emptyStateLabel.translatesAutoresizingMaskIntoConstraints = false
+        loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
             searchBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
@@ -110,7 +118,10 @@ private extension PhotoSearchViewController {
             emptyStateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             emptyStateLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             emptyStateLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
-            emptyStateLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -24)
+            emptyStateLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -24),
+            
+            loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            loadingIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
     }
     
@@ -131,20 +142,30 @@ private extension PhotoSearchViewController {
 extension PhotoSearchViewController {
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         let keyword = searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        
-        if keyword.isEmpty {
-            displayedPhotos = allPhotos
-        } else {
-            displayedPhotos = allPhotos.filter {
-                $0.photographerName.localizedCaseInsensitiveContains(keyword)
-            }
-        }
-        
-        collectionView.reloadData()
-        updateEmptyState()
+
         searchBar.resignFirstResponder()
-        
-        print("検索実行: \(keyword)")
+        updateLoadingState(isLoading: true)
+
+        print("検索開始: keyword=\(keyword)")
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+
+            // 検索キーワードが空の場合は全件表示する
+            if keyword.isEmpty {
+                self.displayedPhotos = self.allPhotos
+            } else {
+                // 撮影者名で部分一致検索を行う
+                self.displayedPhotos = self.allPhotos.filter {
+                    $0.photographerName.localizedCaseInsensitiveContains(keyword)
+                }
+            }
+
+            self.collectionView.reloadData()
+            self.updateLoadingState(isLoading: false)
+
+            print("検索完了: keyword=\(keyword), count=\(self.displayedPhotos.count)")
+        }
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
@@ -154,6 +175,8 @@ extension PhotoSearchViewController {
             displayedPhotos = allPhotos
             collectionView.reloadData()
             updateEmptyState()
+            
+            print("検索条件クリア: 全件表示に戻す")
         }
     }
     
@@ -161,6 +184,18 @@ extension PhotoSearchViewController {
         let isEmpty = displayedPhotos.isEmpty
         emptyStateLabel.isHidden = !isEmpty
         collectionView.isHidden = isEmpty
+    }
+    
+    // ローディング状態の表示を切り替える
+    func updateLoadingState(isLoading: Bool) {
+        if isLoading {
+            loadingIndicator.startAnimating()
+            collectionView.isHidden = true
+            emptyStateLabel.isHidden = true
+        } else {
+            loadingIndicator.stopAnimating()
+            updateEmptyState()
+        }
     }
 }
 
@@ -195,6 +230,7 @@ extension PhotoSearchViewController {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let photo = displayedPhotos[indexPath.item]
+        print("写真選択: id=\(photo.id), photographer=\(photo.photographerName)")
         let detailViewController = PhotoDetailViewController(photo: photo)
         navigationController?.pushViewController(detailViewController, animated: true)
     }
