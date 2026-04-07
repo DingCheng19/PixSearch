@@ -57,7 +57,7 @@ final class PhotoSearchViewController: UIViewController {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
-
+    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -113,100 +113,100 @@ private extension PhotoSearchViewController {
     }
     
     func setupBindings() {
-            let resetTrigger = searchBar.rx.text.orEmpty
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                .distinctUntilChanged()
-                .filter { $0 }
-                .map { _ in () }
-                .asObservable()
-
-            let input = PhotoSearchViewModel.Input(
-                searchText: searchBar.rx.text.orEmpty.asObservable(),
-                searchButtonTapped: searchBar.rx.searchButtonClicked.asObservable(),
-                resetTrigger: resetTrigger,
-                itemSelected: collectionView.rx.itemSelected.asObservable()
-            )
-
-            let output = viewModel.transform(input: input)
-
-            bindPhotos(output.photos)
-            bindLoading(output.isLoading)
-            bindMessage(output.message)
-            bindSelection(output.selectedPhoto)
-
-            searchBar.rx.searchButtonClicked
-                .subscribe(onNext: { [weak self] in
-                    self?.searchBar.resignFirstResponder()
-                })
-                .disposed(by: disposeBag)
-
-            collectionView.rx.setDelegate(self)
-                .disposed(by: disposeBag)
-        }
+        let resetTrigger = searchBar.rx.text.orEmpty
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .map { _ in () }
+            .asObservable()
+        
+        let input = PhotoSearchViewModel.Input(
+            searchText: searchBar.rx.text.orEmpty.asObservable(),
+            searchButtonTapped: searchBar.rx.searchButtonClicked.asObservable(),
+            resetTrigger: resetTrigger,
+            itemSelected: collectionView.rx.itemSelected.asObservable()
+        )
+        
+        let output = viewModel.transform(input: input)
+        
+        bindPhotos(output.photos)
+        bindLoading(output.isLoading)
+        bindMessage(output.message)
+        bindSelection(output.selectedPhoto)
+        
+        searchBar.rx.searchButtonClicked
+            .subscribe(onNext: { [weak self] in
+                self?.searchBar.resignFirstResponder()
+            })
+            .disposed(by: disposeBag)
+        
+        collectionView.rx.setDelegate(self)
+            .disposed(by: disposeBag)
+    }
     
     func bindPhotos(_ photos: Driver<[Photo]>) {
-            photos
-                .drive(
-                    collectionView.rx.items(
-                        cellIdentifier: PhotoCollectionViewCell.identifier,
-                        cellType: PhotoCollectionViewCell.self
-                    )
-                ) { _, photo, cell in
-                    cell.configure(with: photo)
+        photos
+            .drive(
+                collectionView.rx.items(
+                    cellIdentifier: PhotoCollectionViewCell.identifier,
+                    cellType: PhotoCollectionViewCell.self
+                )
+            ) { _, photo, cell in
+                cell.configure(with: photo)
+            }
+            .disposed(by: disposeBag)
+        
+        photos
+            .map { !$0.isEmpty }
+            .drive(onNext: { [weak self] hasPhotos in
+                guard let self = self else { return }
+                self.collectionView.isHidden = !hasPhotos
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    func bindLoading(_ isLoading: Driver<Bool>) {
+        isLoading
+            .drive(onNext: { [weak self] loading in
+                guard let self = self else { return }
+                
+                if loading {
+                    self.loadingIndicator.startAnimating()
+                    self.collectionView.isHidden = true
+                    self.emptyStateLabel.isHidden = true
+                } else {
+                    self.loadingIndicator.stopAnimating()
                 }
-                .disposed(by: disposeBag)
-
-            photos
-                .map { !$0.isEmpty }
-                .drive(onNext: { [weak self] hasPhotos in
-                    guard let self = self else { return }
-                    self.collectionView.isHidden = !hasPhotos
-                })
-                .disposed(by: disposeBag)
-        }
-
-        func bindLoading(_ isLoading: Driver<Bool>) {
-            isLoading
-                .drive(onNext: { [weak self] loading in
-                    guard let self = self else { return }
-
-                    if loading {
-                        self.loadingIndicator.startAnimating()
-                        self.collectionView.isHidden = true
-                        self.emptyStateLabel.isHidden = true
-                    } else {
-                        self.loadingIndicator.stopAnimating()
-                    }
-                })
-                .disposed(by: disposeBag)
-        }
-
-        func bindMessage(_ message: Driver<String?>) {
-            message
-                .drive(onNext: { [weak self] message in
-                    guard let self = self else { return }
-
-                    self.emptyStateLabel.text = message
-                    let shouldShowMessage = !(message?.isEmpty ?? true)
-                    self.emptyStateLabel.isHidden = !shouldShowMessage
-                })
-                .disposed(by: disposeBag)
-        }
-
-        func bindSelection(_ selectedPhoto: Signal<Photo>) {
-            selectedPhoto
-                .emit(onNext: { [weak self] photo in
-                    guard let self = self else { return }
-                    print("写真選択: id=\(photo.id), photographer=\(photo.photographerName)")
-                    let detailViewController = PhotoDetailViewController(photo: photo)
-                    self.navigationController?.pushViewController(detailViewController, animated: true)
-                })
-                .disposed(by: disposeBag)
-        }
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    func bindMessage(_ message: Driver<String?>) {
+        message
+            .drive(onNext: { [weak self] message in
+                guard let self = self else { return }
+                
+                self.emptyStateLabel.text = message
+                let shouldShowMessage = !(message?.isEmpty ?? true)
+                self.emptyStateLabel.isHidden = !shouldShowMessage
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    func bindSelection(_ selectedPhoto: Signal<Photo>) {
+        selectedPhoto
+            .emit(onNext: { [weak self] photo in
+                guard let self = self else { return }
+                print("写真選択: id=\(photo.id), photographer=\(photo.photographerName)")
+                let detailViewController = PhotoDetailViewController(photo: photo)
+                self.navigationController?.pushViewController(detailViewController, animated: true)
+            })
+            .disposed(by: disposeBag)
+    }
 }
 
 extension PhotoSearchViewController: UICollectionViewDelegateFlowLayout {
-
+    
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
