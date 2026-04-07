@@ -17,11 +17,11 @@ final class PhotoSearchViewModel {
         static let decodeError = "Failed to parse response."
     }
 
-    private let photoRepository: PhotoRepository
+    private let photoRepository: PhotoRepositoryProtocol
 
     private(set) var state: PhotoSearchState = .initial(message: Message.initial)
 
-    init(photoRepository: PhotoRepository = PhotoRepository()) {
+    init(photoRepository: PhotoRepositoryProtocol = PhotoRepository()) {
         self.photoRepository = photoRepository
     }
 

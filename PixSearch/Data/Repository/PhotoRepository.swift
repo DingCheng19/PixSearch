@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class PhotoRepository {
+final class PhotoRepository : PhotoRepositoryProtocol {
 
     private let networkService = NetworkService()
 
