@@ -46,7 +46,7 @@ Data/
 ├── Repository/
 ├── DTO/
 └── Network/
-
+```
 
 ---
 
@@ -79,7 +79,7 @@ struct Output {
     let message: Driver<String?>
     let selectedPhoto: Signal<Photo>
 }
-
+```
 ### ViewController
 delegate を使用せず Rx によるバインディングを採用
 UICollectionView のデータも Rx でバインド
@@ -93,10 +93,11 @@ https://www.pexels.com/api/documentation/
 
 ### APIキーの設定方法
 １、Pexels に登録して API Key を取得
+
 ２、以下の箇所に設定してください
-
+```swift
 private let apiKey = "YOUR_API_KEY"
-
+```
 ## テスト
 PhotoSearchViewModel に対して単体テストを実装しています。
 
@@ -108,12 +109,15 @@ APIエラー発生時のエラーハンドリング
 
 ## 実行方法
 １、リポジトリを clone
+
 ２、Xcode でプロジェクトを開く
+
 ３、API Key を設定
+
 ４、ビルドして実行
 
 ## 実装におけるポイント
-・MVVM + RxSwift による責務分離
-・UI とロジックの疎結合化
-・Repository パターンによるデータ取得の抽象化
-・シンプルかつ拡張しやすい設計
+- MVVM + RxSwift による責務分離
+- UI とロジックの疎結合化
+- Repository パターンによるデータ取得の抽象化
+- シンプルかつ拡張しやすい設計
