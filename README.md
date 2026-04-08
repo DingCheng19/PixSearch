@@ -121,3 +121,22 @@ APIエラー発生時のエラーハンドリング
 - UI とロジックの疎結合化
 - Repository パターンによるデータ取得の抽象化
 - シンプルかつ拡張しやすい設計
+
+## 📸 スクリーンショット
+
+### 🔍 検索画面
+
+
+<img width="280" height="700" alt="Simulator Screenshot - iPhone 15 Pro - 2026-04-08 at 09 56 05" src="https://github.com/user-attachments/assets/eefcb4b1-acd1-4dbd-8f75-2589796d43a7" />
+
+<img width="280" height="700" alt="Simulator Screenshot - iPhone 15 Pro - 2026-04-08 at 09 56 53" src="https://github.com/user-attachments/assets/974c2bf3-d085-4963-aacf-320b383df7e2" />
+
+
+<img width="280" height="700" alt="Simulator Screenshot - iPhone 15 Pro - 2026-04-08 at 09 47 55" src="https://github.com/user-attachments/assets/77cb15d5-a259-41cb-a422-add0b568eb41" />
+
+
+### 🖼 詳細画面
+<img width="280" height="700" alt="Simulator Screenshot - iPhone 15 Pro - 2026-04-08 at 09 58 23" src="https://github.com/user-attachments/assets/e63e3a71-589f-438a-852f-1e242afe027d" />
+
+
+
