@@ -32,10 +32,12 @@ Pexels API を利用した写真検索アプリです。
 ## 🏗 アーキテクチャ
 
 本アプリは MVVM パターンをベースに設計しています。
+
+```text
 Presentation/
 └── Search/
     ├── View/
-    ├── ViewModel/
+    └── ViewModel/
 
 Domain/
 └── Model/
